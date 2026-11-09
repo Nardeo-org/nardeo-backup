@@ -115,7 +115,15 @@ go vet ./...
 go build ./cmd/nardeo-backup
 ```
 
-Tests exercise configuration, CLI behavior, compression, subprocess failures, cancellation, private output files and credential handling. They use a controlled `pg_dump` executable and do not require a running database. GitHub Actions runs the checks on Go 1.22 and the current stable Go release.
+Unit and subprocess tests exercise configuration, CLI behavior, compression, subprocess failures, cancellation, private output files and credential handling. They use a controlled `pg_dump` executable and do not require a running database. GitHub Actions runs the checks on Go 1.22 and the current stable Go release.
+
+CI also verifies a real PostgreSQL 18 backup and restore with both connection modes, comparing fixture rows and the restored identity sequence. Run the same isolated check locally with Go, Bash and Docker:
+
+```sh
+bash tests/integration/run.sh
+```
+
+See [the integration test guide](CONTRIBUTING.md#postgresql-integration-test) for environment and cleanup details.
 
 ## Layout
 

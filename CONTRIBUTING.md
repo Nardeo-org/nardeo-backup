@@ -6,7 +6,7 @@ Use [private vulnerability reporting](https://github.com/Nardeo-org/nardeo-backu
 
 ## Development
 
-Use a current stable Go release for development and security scanning. Keep application code compatible with Go 1.22. Tests use a controlled `pg_dump` executable and do not require a live database.
+Use a current stable Go release for development and security scanning. Keep application code compatible with Go 1.22. The default unit tests use a controlled `pg_dump` executable and do not require a live database.
 
 ```sh
 go mod download
@@ -18,6 +18,18 @@ go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 ```
 
 If you change PostgreSQL subprocess behavior, verify backup and restore against a disposable PostgreSQL database. Use synthetic data and keep credentials and dumps out of commits.
+
+### PostgreSQL integration test
+
+With Go, Bash and a running Docker daemon using Linux amd64 or arm64 containers:
+
+```sh
+bash tests/integration/run.sh
+```
+
+The runner builds the CLI and integration test binary, starts a disposable PostgreSQL 18 container without external networking or published ports, and runs the tests inside it with matching `pg_dump` and `psql` clients. It uses generated temporary credentials and removes the container, its database storage and build artifacts on exit.
+
+The test creates synthetic rows, invokes the CLI using both `PG*` fields and `DATABASE_URL`, streams each gzip backup into a separate restore database, and checks all rows and the restored identity sequence. Fixtures include Unicode, quotes, tabs, newlines and NULL values. Integration tests use the `integration` build tag and run through this wrapper; they do not use a developer's database connection settings. CI runs the wrapper inside both required Go-version jobs, so a failed round trip blocks merging.
 
 ## Pull requests
 

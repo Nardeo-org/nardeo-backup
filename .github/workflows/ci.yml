@@ -37,3 +37,5 @@ jobs:
         run: go vet ./...
       - name: Build
         run: go build ./cmd/nardeo-backup
+      - name: Verify PostgreSQL backup and restore
+        run: bash tests/integration/run.sh
