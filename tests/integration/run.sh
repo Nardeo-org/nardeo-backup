@@ -6,7 +6,8 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-command -v go >/dev/null || { printf '%s\n' 'Go is required.' >&2; exit 1; }
+command -v "${GO:-go}" >/dev/null || { printf '%s\n' 'Go is required.' >&2; exit 1; }
+command -v make >/dev/null || { printf '%s\n' 'GNU Make is required.' >&2; exit 1; }
 command -v docker >/dev/null || { printf '%s\n' 'Docker is required.' >&2; exit 1; }
 docker info >/dev/null
 
@@ -50,8 +51,8 @@ case "$platform" in
 esac
 
 printf '%s\n' 'Building the CLI and integration tests for the container platform.'
-CGO_ENABLED=0 GOOS=linux GOARCH="$target_arch" go build -trimpath -o "$task_dir/nardeo-backup" ./cmd/nardeo-backup
-CGO_ENABLED=0 GOOS=linux GOARCH="$target_arch" go test -c -tags=integration -o "$task_dir/integration.test" ./tests/integration
+CGO_ENABLED=0 GOOS=linux GOARCH="$target_arch" MAKEFLAGS='' make --no-print-directory build BINARY="$task_dir/nardeo-backup"
+CGO_ENABLED=0 GOOS=linux GOARCH="$target_arch" "${GO:-go}" test -c -tags=integration -o "$task_dir/integration.test" ./tests/integration
 
 ready=false
 for ((attempt=0; attempt<30; attempt++)); do
