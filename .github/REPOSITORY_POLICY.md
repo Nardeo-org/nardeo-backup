@@ -28,7 +28,9 @@ The JSON files are reproducible ruleset definitions; editing them alone does not
 - Dependency review rejects newly introduced vulnerabilities rated moderate or higher.
 - CodeQL analyzes Go and Actions workflows on pull requests, on `main`, weekly and on demand.
 
-Workflows use GitHub-hosted runners, time limits, full SHA action pins and read-only permissions by default. Repository settings enforce action SHA pins and allow GitHub-maintained actions plus the official CodeQL action. CodeQL receives the additional permission to upload security findings. Checkout does not persist Git credentials, and workflows do not receive pull request approval permissions. Fork workflow runs require approval from a maintainer for external contributors.
+Workflows use GitHub-hosted runners, time limits, full SHA action pins and read-only permissions by default. Repository settings enforce action SHA pins and allow GitHub-maintained actions plus the official CodeQL and GoReleaser actions. CodeQL receives the additional permission to upload security findings. Checkout does not persist Git credentials, and workflows do not receive pull request approval permissions. Fork workflow runs require approval from a maintainer for external contributors.
+
+Release previews run inside the required `test (stable)` job. Version-tag pushes run the release workflow, which verifies that the tagged commit is merged into `main` and repeats the shared validation and security checks. Only the publishing job receives `contents: write`; it creates a GitHub draft release with archives, checksums and generated notes. Release tags remain protected against modification and deletion.
 
 ## Reporting and maintenance
 

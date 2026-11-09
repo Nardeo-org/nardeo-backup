@@ -25,6 +25,8 @@ Build metadata uses `VERSION=dev` and the current Git commit by default. Release
 
 The [.editorconfig](.editorconfig) defines UTF-8, LF line endings, final newlines, tabs for Go/Make files and two-space indentation for other text files. Markdown retains intentional trailing whitespace. Go source formatting is enforced by `gofmt` through `make fmt-check`.
 
+Release tooling is pinned in [.tool-versions](.tool-versions). With that GoReleaser version installed, `make release-check` validates the configuration and `make release-snapshot` builds all platform archives without publishing. The required stable-Go CI job runs the same preview. Follow [the release guide](docs/releases.md) for the `v0.1.0` preparation and tag workflow; release notes use the repository's Git history and all release artifacts retain Nardeo licensing.
+
 If you change PostgreSQL subprocess behavior, verify backup and restore against a disposable PostgreSQL database. Use synthetic data and keep credentials and dumps out of commits.
 
 ### PostgreSQL integration test

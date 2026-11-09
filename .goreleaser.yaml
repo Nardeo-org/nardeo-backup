@@ -1,0 +1,66 @@
+# Copyright (c) 2026 Nardeo.
+
+version: 2
+project_name: nardeo-backup
+
+builds:
+  - id: nardeo-backup
+    main: ./cmd/nardeo-backup
+    binary: nardeo-backup
+    env:
+      - CGO_ENABLED=0
+      - GOWORK=off
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false, -mod=readonly]
+    ldflags:
+      - -s -w -X main.version=v{{ .Version }} -X main.commit={{ .FullCommit }}
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+  - id: archives
+    formats: [tar.gz]
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    builds_info:
+      owner: root
+      group: root
+    files:
+      - src: LICENSE
+        info: {owner: root, group: root, mode: 0644, mtime: '{{ .CommitDate }}'}
+      - src: README.md
+        info: {owner: root, group: root, mode: 0644, mtime: '{{ .CommitDate }}'}
+      - src: SECURITY.md
+        info: {owner: root, group: root, mode: 0644, mtime: '{{ .CommitDate }}'}
+      - src: CHANGELOG.md
+        info: {owner: root, group: root, mode: 0644, mtime: '{{ .CommitDate }}'}
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: '{{ .Version }}-next-{{ .ShortCommit }}'
+
+changelog:
+  use: git
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\([^)]*\))?!?:'
+      order: 0
+    - title: Fixes
+      regexp: '^fix(\([^)]*\))?!?:'
+      order: 1
+    - title: Security
+      regexp: '^security(\([^)]*\))?!?:'
+      order: 2
+    - title: Maintenance
+      order: 3
+
+release:
+  github:
+    owner: Nardeo-org
+    name: nardeo-backup
+  draft: true
+  prerelease: auto
+  name_template: '{{ .Tag }}'

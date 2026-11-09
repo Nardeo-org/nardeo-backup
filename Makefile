@@ -8,9 +8,11 @@ VERSION ?= dev
 COMMIT ?= $(shell if test -e .git; then git rev-parse --short=12 HEAD 2>/dev/null || printf unknown; else printf unknown; fi)
 LDFLAGS ?=
 GOVULNCHECK_VERSION := v1.9.0
+GORELEASER ?= goreleaser
+RELEASE_GO_VERSION := $(shell awk '$$1 == "golang" {print $$2}' .tool-versions)
 export GO VERSION COMMIT LDFLAGS
 
-.PHONY: help build test check fmt fmt-check vet test-integration security
+.PHONY: help build test check fmt fmt-check vet test-integration security release-check release-snapshot release-publish
 
 help:
 	@printf '%s\n' \
@@ -21,7 +23,10 @@ help:
 		'make fmt-check         Verify Go formatting without changing files' \
 		'make vet               Vet all packages, including integration tests' \
 		'make test-integration  Run the isolated PostgreSQL backup and restore test' \
-		'make security          Check reachable Go vulnerabilities (use current stable Go)'
+		'make security          Check reachable Go vulnerabilities (use current stable Go)' \
+		'make release-check     Validate the GoReleaser configuration' \
+		'make release-snapshot  Build all release archives locally without publishing' \
+		'make release-publish   Create a GitHub draft release from a version tag'
 
 build:
 	@mkdir -p "$$(dirname -- "$(BINARY)")"
@@ -48,6 +53,16 @@ test-integration:
 
 security:
 	"$(GO)" run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
+
+release-check:
+	"$(GORELEASER)" check
+
+release-snapshot: release-check
+	GOTOOLCHAIN="go$(RELEASE_GO_VERSION)" "$(GORELEASER)" release --snapshot --clean
+	bash tests/release/verify.sh
+
+release-publish: release-check
+	GOTOOLCHAIN="go$(RELEASE_GO_VERSION)" "$(GORELEASER)" release --clean
 
 check:
 	$(MAKE) --no-print-directory fmt-check
