@@ -107,7 +107,7 @@ The URL in this example must identify the restore destination. A dump covers one
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting and operational security guidance.
+Start with [AGENTS.md](AGENTS.md) for shared project context, [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting and operational security guidance. The current design is described in [Architecture](docs/architecture.md); task specifications and handoffs use [.ai/](.ai/README.md).
 
 ```sh
 go test -race ./...
