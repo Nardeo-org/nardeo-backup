@@ -1,0 +1,15 @@
+/bin/
+/dist/
+/backups/
+/nardeo-backup
+/backup
+*.exe
+*.test
+coverage.out
+.env
+.env.*
+!.env.example
+*.sql
+*.gz
+*.db
+.DS_Store
