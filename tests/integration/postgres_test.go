@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPostgresBackupRestore(t *testing.T) {
@@ -80,7 +81,7 @@ INSERT INTO backup_fixture.records (label, note, active) VALUES
 					}
 				}
 			}
-			run(t, ctx, backupEnv, nil, password, binary, "pg", "--output-dir", output)
+			run(t, ctx, backupEnv, nil, password, binary, "pg", "--output-dir", output, "--timeout", "30s")
 			entries, err := os.ReadDir(output)
 			if err != nil {
 				t.Fatal(err)
@@ -113,6 +114,74 @@ INSERT INTO backup_fixture.records (label, note, active) VALUES
 				t.Fatalf("restored identity sequence returned %q, want 4", nextID)
 			}
 		})
+	}
+
+	t.Run("timeout", func(t *testing.T) {
+		assertBackupTimeout(t, ctx, env, binary, password)
+	})
+}
+
+func assertBackupTimeout(t *testing.T, ctx context.Context, env []string, binary, password string) {
+	t.Helper()
+	lockCtx, cancel := context.WithCancel(ctx)
+	lock := exec.CommandContext(lockCtx, "psql", "--no-psqlrc", "--no-password", "--quiet", "--set=ON_ERROR_STOP=1", "--dbname=nardeo_source")
+	lock.Env = append(append([]string(nil), env...), "PGAPPNAME=nardeo_timeout_fixture")
+	lock.Stdin = strings.NewReader("BEGIN; LOCK TABLE backup_fixture.records IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(60);")
+	if err := lock.Start(); err != nil {
+		cancel()
+		t.Fatalf("start lock holder: %v", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- lock.Wait(); close(done) }()
+	t.Cleanup(func() {
+		cancel()
+		for range done {
+		}
+	})
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		ready := psql(t, ctx, env, "nardeo_source", strings.NewReader(`
+SELECT EXISTS (
+    SELECT 1 FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid
+    WHERE l.relation = 'backup_fixture.records'::regclass
+      AND l.mode = 'AccessExclusiveLock' AND l.granted
+      AND a.application_name = 'nardeo_timeout_fixture'
+      AND a.datname = current_database()
+);`), password)
+		if ready == "t" {
+			break
+		}
+		select {
+		case err := <-done:
+			t.Fatalf("lock holder exited before acquiring its lock: %v", err)
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case <-ticker.C:
+		}
+	}
+	output := filepath.Join(t.TempDir(), "timed-out-backup")
+	cmd := exec.CommandContext(ctx, binary, "pg", "--output-dir", output, "--timeout", "100ms")
+	cmd.Env = append([]string(nil), env...)
+	for i, entry := range cmd.Env {
+		if strings.HasPrefix(entry, "PGDATABASE=") {
+			cmd.Env[i] = "PGDATABASE=nardeo_source"
+		}
+	}
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err == nil {
+		t.Fatal("backup unexpectedly succeeded while the source table was locked")
+	}
+	if !strings.Contains(stderr.String(), "timed out") {
+		t.Fatal("locked backup did not report a timeout")
+	}
+	entries, err := os.ReadDir(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("files remain after the locked backup timed out: %v", entries)
 	}
 }
 

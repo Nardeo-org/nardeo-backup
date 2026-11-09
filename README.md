@@ -21,6 +21,7 @@ git clone https://github.com/nardeo-org/nardeo-backup.git
 cd nardeo-backup
 make build
 ./bin/nardeo-backup --help
+./bin/nardeo-backup --version
 ```
 
 The Go module path is `github.com/nardeo/nardeo-backup`; the repository is hosted in the `nardeo-org` organization. Build from a checkout using the commands above.
@@ -29,6 +30,12 @@ The executable can also be named `backup`:
 
 ```sh
 make build BINARY=bin/backup
+```
+
+`make build` embeds version `dev` and the current 12-character Git commit. Supply a release version with `make build VERSION=v0.1.0`; `COMMIT` can also be supplied by release tooling. Without a Git checkout, the commit defaults to `unknown`. Direct Go builds use `dev` and `unknown` unless linker metadata is supplied.
+
+```text
+nardeo-backup v0.1.0 (commit abc123def456)
 ```
 
 ## Configure
@@ -75,6 +82,7 @@ Without a URL, the host, port, user and database identify the connection. Passwo
 ./bin/nardeo-backup --help
 ./bin/nardeo-backup pg --help
 ./bin/nardeo-backup pg --output-dir ./backups --verbose
+./bin/nardeo-backup pg --output-dir ./backups --timeout 15m
 ./bin/nardeo-backup pg --db-url 'postgresql://backup@localhost:5432/app'
 ```
 
@@ -83,8 +91,12 @@ Without a URL, the host, port, user and database identify the connection. Passwo
 | `--output-dir` | Override `OUTPUT_DIR` |
 | `--db-url` | Override `DATABASE_URL` |
 | `--verbose` | Enable debug logs |
+| `--timeout` | Maximum backup duration, such as `30s`, `15m` or `1h`; `0` disables the limit (default) |
+| `--version` | Print version and commit without requiring database configuration |
 
 Root and help commands print the Nardeo Backup banner. Backup operations write structured text logs to stderr, including the output path and elapsed time. Errors return a nonzero exit code.
+
+A positive timeout creates a deadline for the backup context and cancels `pg_dump` when it expires. The command reports a timeout, returns a nonzero exit status and removes its temporary backup file during normal cleanup. Cleanup may take additional time after the deadline. Negative durations are rejected; a zero timeout preserves the unlimited default. Interrupt signals still cancel the operation independently.
 
 Each successful backup produces a unique file such as:
 
@@ -120,7 +132,7 @@ make security
 
 Unit and subprocess tests exercise configuration, CLI behavior, compression, subprocess failures, cancellation, private output files and credential handling. They use a controlled `pg_dump` executable and do not require a running database. GitHub Actions runs the checks on Go 1.22 and the current stable Go release.
 
-CI also verifies a real PostgreSQL 18 backup and restore with both connection modes, comparing fixture rows and the restored identity sequence. Run the same isolated check locally with Go, GNU Make, Bash and Docker:
+CI also verifies a real PostgreSQL 18 backup and restore with both connection modes, comparing fixture rows and the restored identity sequence. A locked-table case checks timeout cancellation and partial-file cleanup. Run the same isolated check locally with Go, GNU Make, Bash and Docker:
 
 ```sh
 make test-integration
