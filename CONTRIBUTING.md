@@ -4,6 +4,8 @@ Copyright (c) 2026 Nardeo.
 
 Use [private vulnerability reporting](https://github.com/Nardeo-org/nardeo-backup/security/advisories/new) for security issues. Follow [SECURITY.md](SECURITY.md) before sharing sensitive information.
 
+Start each task with [AGENTS.md](AGENTS.md) and the linked project context. When using an assistant or editor that does not load that file automatically, attach it explicitly. Keep tool-specific instructions as references to the shared file so contributors use the same project rules.
+
 ## Development
 
 Use GNU Make 3.81 or newer and a current stable Go release for development and security scanning. Keep application code compatible with Go 1.22. The default unit tests use a controlled `pg_dump` executable and do not require a live database.
@@ -19,7 +21,6 @@ make security
 The [Makefile](Makefile) is the shared command definition for contributors, agents and CI. Run `make help` for the available targets. `make build` writes `bin/nardeo-backup`; use `BINARY=bin/backup` to choose another path or `GO=/path/to/go` to select a Go executable.
 
 Build metadata uses `VERSION=dev` and the current Git commit by default. Release tooling can call `make build VERSION=v0.1.0 COMMIT=abc123def456`. These values populate the CLI's `--version` output through `main.version` and `main.commit` linker variables. Source archives without `.git` use commit `unknown`; builds made directly with Go retain `dev`/`unknown` unless those linker variables are supplied. Additional linker options can be passed with `LDFLAGS`.
-
 `make check` runs formatting verification, race-enabled unit tests, vet (including integration packages), build and the PostgreSQL round trip, in order, stopping at the first failure. It requires Bash and a running Docker daemon. Use `make test` for the unit suite without Docker, and `make fmt-check` for a read-only formatting check. `make security` mirrors the separate vulnerability-scanning workflow and requires a current stable Go toolchain. CodeQL and dependency review remain separate GitHub checks.
 
 The [.editorconfig](.editorconfig) defines UTF-8, LF line endings, final newlines, tabs for Go/Make files and two-space indentation for other text files. Markdown retains intentional trailing whitespace. Go source formatting is enforced by `gofmt` through `make fmt-check`.
@@ -45,6 +46,8 @@ The happy paths use an explicit 30-second backup limit. A separate case holds an
 Create a short-lived branch or fork and open a pull request against `main`. Explain the problem, resulting behavior and validation. Add regression tests for changes to observable behavior, and update usage documentation when necessary.
 
 Required checks must pass on an up-to-date branch. Resolve review conversations and obtain the required maintainer approval before merging. New commits can invalidate earlier approvals. See [Repository policy](.github/REPOSITORY_POLICY.md) for the complete merge requirements.
+
+Use [CODE_REVIEW.md](CODE_REVIEW.md) for the project review checklist. Keep [architecture](docs/architecture.md), [compatibility](BACKWARD_COMPATIBILITY.md) and [decision records](docs/decisions/) current when they are affected. Substantial requirements and cross-session task notes can use the templates in [.ai/](.ai/README.md).
 
 All source code, comments, logs, CLI text and documentation must be written in English. Keep copyright notices under Nardeo. Contributions are accepted under the repository's [MIT License](LICENSE).
 
