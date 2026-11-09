@@ -29,7 +29,7 @@ jobs:
           go-version: stable
           cache: true
       - name: Check reachable Go vulnerabilities
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+        run: make security
 
   dependency-review:
     name: dependency-review

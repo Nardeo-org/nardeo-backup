@@ -8,28 +8,33 @@ Start each task with [AGENTS.md](AGENTS.md) and the linked project context. When
 
 ## Development
 
-Use a current stable Go release for development and security scanning. Keep application code compatible with Go 1.22. The default unit tests use a controlled `pg_dump` executable and do not require a live database.
+Use GNU Make 3.81 or newer and a current stable Go release for development and security scanning. Keep application code compatible with Go 1.22. The default unit tests use a controlled `pg_dump` executable and do not require a live database.
 
 ```sh
-go mod download
-gofmt -w cmd internal
-go test -race ./...
-go vet ./...
-go build ./cmd/nardeo-backup
-go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+make fmt
+make test
+make build
+make check
+make security
 ```
+
+The [Makefile](Makefile) is the shared command definition for contributors, agents and CI. Run `make help` for the available targets. `make build` writes `bin/nardeo-backup`; use `BINARY=bin/backup` to choose another path or `GO=/path/to/go` to select a Go executable.
+
+`make check` runs formatting verification, race-enabled unit tests, vet (including integration packages), build and the PostgreSQL round trip, in order, stopping at the first failure. It requires Bash and a running Docker daemon. Use `make test` for the unit suite without Docker, and `make fmt-check` for a read-only formatting check. `make security` mirrors the separate vulnerability-scanning workflow and requires a current stable Go toolchain. CodeQL and dependency review remain separate GitHub checks.
+
+The [.editorconfig](.editorconfig) defines UTF-8, LF line endings, final newlines, tabs for Go/Make files and two-space indentation for other text files. Markdown retains intentional trailing whitespace. Go source formatting is enforced by `gofmt` through `make fmt-check`.
 
 If you change PostgreSQL subprocess behavior, verify backup and restore against a disposable PostgreSQL database. Use synthetic data and keep credentials and dumps out of commits.
 
 ### PostgreSQL integration test
 
-With Go, Bash and a running Docker daemon using Linux amd64 or arm64 containers:
+With Go, GNU Make, Bash and a running Docker daemon using Linux amd64 or arm64 containers:
 
 ```sh
-bash tests/integration/run.sh
+make test-integration
 ```
 
-The runner builds the CLI and integration test binary, starts a disposable PostgreSQL 18 container without external networking or published ports, and runs the tests inside it with matching `pg_dump` and `psql` clients. It uses generated temporary credentials and removes the container, its database storage and build artifacts on exit.
+The runner uses `make build` for the CLI and compiles the integration test binary, starts a disposable PostgreSQL 18 container without external networking or published ports, and runs the tests inside it with matching `pg_dump` and `psql` clients. It uses generated temporary credentials and removes the container, its database storage and build artifacts on exit.
 
 The test creates synthetic rows, invokes the CLI using both `PG*` fields and `DATABASE_URL`, streams each gzip backup into a separate restore database, and checks all rows and the restored identity sequence. Fixtures include Unicode, quotes, tabs, newlines and NULL values. Integration tests use the `integration` build tag and run through this wrapper; they do not use a developer's database connection settings. CI runs the wrapper inside both required Go-version jobs, so a failed round trip blocks merging.
 
