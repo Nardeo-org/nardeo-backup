@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible defect without including secrets or database contents.
+title: 'bug: '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For security vulnerabilities, use private reporting linked in SECURITY.md. Do not attach .env files, credentials, password-bearing connection URLs or database dumps.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Include the operating system, Go version and pg_dump version when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Use synthetic data and redact connection details.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized logs
+    validations:
+      required: true

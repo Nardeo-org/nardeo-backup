@@ -107,6 +107,8 @@ The URL in this example must identify the restore destination. A dump covers one
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting and operational security guidance.
+
 ```sh
 go test -race ./...
 go vet ./...

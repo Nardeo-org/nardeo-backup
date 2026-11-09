@@ -12,4 +12,9 @@ coverage.out
 *.sql
 *.gz
 *.db
+*.sql.gz.partial
+*.pem
+*.key
+*.p12
+*.pfx
 .DS_Store
