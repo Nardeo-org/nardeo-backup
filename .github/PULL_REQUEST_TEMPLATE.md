@@ -4,7 +4,7 @@ Describe the problem and the resulting behavior. Link the relevant issue if one 
 
 ## Validation
 
-- [ ] Formatting, tests, vet and build pass.
+- [ ] `make check` passes, including the PostgreSQL round trip.
 - [ ] Relevant security checks pass.
 - [ ] Documentation reflects any changed behavior.
 - [ ] Shared project context, compatibility notes and decision records are updated where affected.

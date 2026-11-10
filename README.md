@@ -7,6 +7,7 @@ Copyright (c) 2026 Nardeo. Licensed under the [MIT License](LICENSE).
 ## Requirements
 
 - Go 1.22 or newer to build from source.
+- GNU Make 3.81 or newer for the shared build and validation commands.
 - PostgreSQL client tools with `pg_dump` available in `PATH`.
 - A PostgreSQL account with permission to read the database being backed up.
 - An output filesystem supporting hard links for atomic publication of completed backups.
@@ -18,8 +19,9 @@ Use a `pg_dump` version compatible with your server. A client older than the ser
 ```sh
 git clone https://github.com/nardeo-org/nardeo-backup.git
 cd nardeo-backup
-go build -o bin/nardeo-backup ./cmd/nardeo-backup
+make build
 ./bin/nardeo-backup --help
+./bin/nardeo-backup --version
 ```
 
 The Go module path is `github.com/nardeo/nardeo-backup`; the repository is hosted in the `nardeo-org` organization. Build from a checkout using the commands above.
@@ -27,7 +29,13 @@ The Go module path is `github.com/nardeo/nardeo-backup`; the repository is hoste
 The executable can also be named `backup`:
 
 ```sh
-go build -o bin/backup ./cmd/nardeo-backup
+make build BINARY=bin/backup
+```
+
+`make build` embeds version `dev` and the current 12-character Git commit. Supply a release version with `make build VERSION=v0.1.0`; `COMMIT` can also be supplied by release tooling. Without a Git checkout, the commit defaults to `unknown`. Direct Go builds use `dev` and `unknown` unless linker metadata is supplied.
+
+```text
+nardeo-backup v0.1.0 (commit abc123def456)
 ```
 
 ## Configure
@@ -74,6 +82,7 @@ Without a URL, the host, port, user and database identify the connection. Passwo
 ./bin/nardeo-backup --help
 ./bin/nardeo-backup pg --help
 ./bin/nardeo-backup pg --output-dir ./backups --verbose
+./bin/nardeo-backup pg --output-dir ./backups --timeout 15m
 ./bin/nardeo-backup pg --db-url 'postgresql://backup@localhost:5432/app'
 ```
 
@@ -82,8 +91,12 @@ Without a URL, the host, port, user and database identify the connection. Passwo
 | `--output-dir` | Override `OUTPUT_DIR` |
 | `--db-url` | Override `DATABASE_URL` |
 | `--verbose` | Enable debug logs |
+| `--timeout` | Maximum backup duration, such as `30s`, `15m` or `1h`; `0` disables the limit (default) |
+| `--version` | Print version and commit without requiring database configuration |
 
 Root and help commands print the Nardeo Backup banner. Backup operations write structured text logs to stderr, including the output path and elapsed time. Errors return a nonzero exit code.
+
+A positive timeout creates a deadline for the backup context and cancels `pg_dump` when it expires. The command reports a timeout, returns a nonzero exit status and removes its temporary backup file during normal cleanup. Cleanup may take additional time after the deadline. Negative durations are rejected; a zero timeout preserves the unlimited default. Interrupt signals still cancel the operation independently.
 
 Each successful backup produces a unique file such as:
 
@@ -110,12 +123,22 @@ The URL in this example must identify the restore destination. A dump covers one
 Start with [AGENTS.md](AGENTS.md) for shared project context, [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting and operational security guidance. The current design is described in [Architecture](docs/architecture.md); task specifications and handoffs use [.ai/](.ai/README.md).
 
 ```sh
-go test -race ./...
-go vet ./...
-go build ./cmd/nardeo-backup
+make test
+make check
+make security
 ```
 
-Tests exercise configuration, CLI behavior, compression, subprocess failures, cancellation, private output files and credential handling. They use a controlled `pg_dump` executable and do not require a running database. GitHub Actions runs the checks on Go 1.22 and the current stable Go release.
+`make test` runs the unit suite without Docker. `make check` is the same ordered formatting, test, vet, build and PostgreSQL integration gate used in CI; it requires Docker. Run `make security` with current stable Go for the vulnerability scan, and `make help` to list all shared commands. The [.editorconfig](.editorconfig) keeps editor whitespace settings consistent; `make fmt` applies Go formatting.
+
+Unit and subprocess tests exercise configuration, CLI behavior, compression, subprocess failures, cancellation, private output files and credential handling. They use a controlled `pg_dump` executable and do not require a running database. GitHub Actions runs the checks on Go 1.22 and the current stable Go release.
+
+CI also verifies a real PostgreSQL 18 backup and restore with both connection modes, comparing fixture rows and the restored identity sequence. A locked-table case checks timeout cancellation and partial-file cleanup. Run the same isolated check locally with Go, GNU Make, Bash and Docker:
+
+```sh
+make test-integration
+```
+
+See [the integration test guide](CONTRIBUTING.md#postgresql-integration-test) for environment and cleanup details.
 
 ## Layout
 

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/nardeo/nardeo-backup/internal/backup"
@@ -15,12 +18,14 @@ func newRootCommand() *cobra.Command {
 		Use:           "nardeo-backup",
 		Short:         "Stream PostgreSQL backups into compressed files",
 		Long:          "Nardeo Backup creates timestamped, gzip-compressed PostgreSQL SQL dumps.",
+		Version:       version + " (commit " + commit + ")",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
 		RunE:          func(cmd *cobra.Command, args []string) error { return cmd.Help() },
 	}
 	root.CompletionOptions.DisableDefaultCmd = true
+	root.SetVersionTemplate("{{.Name}} {{.Version}}\n")
 	cfg.BindFlags(root.PersistentFlags())
 	defaultHelp := root.HelpFunc()
 	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
@@ -40,8 +45,17 @@ func newRootCommand() *cobra.Command {
 			logger.Info("Starting PostgreSQL backup")
 			logger.Debug("Streaming pg_dump output through gzip")
 			started := time.Now()
-			path, err := backup.Postgres(cmd.Context(), cfg)
+			ctx := cmd.Context()
+			if cfg.Timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
+				defer cancel()
+			}
+			path, err := backup.Postgres(ctx, cfg)
 			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					return fmt.Errorf("PostgreSQL backup timed out: %w", err)
+				}
 				return err
 			}
 			logger.Info("Backup completed", "path", path, "duration", time.Since(started))
