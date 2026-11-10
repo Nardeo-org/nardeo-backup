@@ -140,6 +140,12 @@ make test-integration
 
 See [the integration test guide](CONTRIBUTING.md#postgresql-integration-test) for environment and cleanup details.
 
+## Releases
+
+GoReleaser prepares Linux and macOS archives for amd64 and arm64, a SHA-256 checksum manifest, and release notes from Git history. The first planned version is `v0.1.0`. Version-tag workflows create a draft after validating the tagged `main` commit; release previews are built in the required CI checks.
+
+Use `make release-snapshot` for a local preview with the tool versions pinned in [.tool-versions](.tool-versions). See [the release guide](docs/releases.md) for preparing tags, reproducing artifacts and publishing the draft.
+
 ## Layout
 
 ```text
