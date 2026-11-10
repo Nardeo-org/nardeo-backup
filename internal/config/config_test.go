@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -21,6 +22,36 @@ func TestFlagsOverrideEnvironment(t *testing.T) {
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestTimeoutFlagAndValidation(t *testing.T) {
+	for _, tc := range []struct {
+		value   string
+		want    time.Duration
+		invalid bool
+	}{
+		{"0", 0, false}, {"50ms", 50 * time.Millisecond, false}, {"15m", 15 * time.Minute, false}, {"-1s", -time.Second, true},
+	} {
+		t.Run(tc.value, func(t *testing.T) {
+			cfg := Config{DatabaseURL: "postgresql://localhost/app", OutputDir: "backups"}
+			flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			cfg.BindFlags(flags)
+			if err := flags.Parse([]string{"--timeout=" + tc.value}); err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Timeout != tc.want {
+				t.Fatalf("timeout = %v, want %v", cfg.Timeout, tc.want)
+			}
+			err := cfg.Validate()
+			if tc.invalid {
+				if err == nil || !strings.Contains(err.Error(), "timeout") {
+					t.Fatalf("expected timeout validation error, got %v", err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 

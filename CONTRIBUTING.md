@@ -20,6 +20,7 @@ make security
 
 The [Makefile](Makefile) is the shared command definition for contributors, agents and CI. Run `make help` for the available targets. `make build` writes `bin/nardeo-backup`; use `BINARY=bin/backup` to choose another path or `GO=/path/to/go` to select a Go executable.
 
+Build metadata uses `VERSION=dev` and the current Git commit by default. Release tooling can call `make build VERSION=v0.1.0 COMMIT=abc123def456`. These values populate the CLI's `--version` output through `main.version` and `main.commit` linker variables. Source archives without `.git` use commit `unknown`; builds made directly with Go retain `dev`/`unknown` unless those linker variables are supplied. Additional linker options can be passed with `LDFLAGS`.
 `make check` runs formatting verification, race-enabled unit tests, vet (including integration packages), build and the PostgreSQL round trip, in order, stopping at the first failure. It requires Bash and a running Docker daemon. Use `make test` for the unit suite without Docker, and `make fmt-check` for a read-only formatting check. `make security` mirrors the separate vulnerability-scanning workflow and requires a current stable Go toolchain. CodeQL and dependency review remain separate GitHub checks.
 
 The [.editorconfig](.editorconfig) defines UTF-8, LF line endings, final newlines, tabs for Go/Make files and two-space indentation for other text files. Markdown retains intentional trailing whitespace. Go source formatting is enforced by `gofmt` through `make fmt-check`.
@@ -37,6 +38,8 @@ make test-integration
 The runner uses `make build` for the CLI and compiles the integration test binary, starts a disposable PostgreSQL 18 container without external networking or published ports, and runs the tests inside it with matching `pg_dump` and `psql` clients. It uses generated temporary credentials and removes the container, its database storage and build artifacts on exit.
 
 The test creates synthetic rows, invokes the CLI using both `PG*` fields and `DATABASE_URL`, streams each gzip backup into a separate restore database, and checks all rows and the restored identity sequence. Fixtures include Unicode, quotes, tabs, newlines and NULL values. Integration tests use the `integration` build tag and run through this wrapper; they do not use a developer's database connection settings. CI runs the wrapper inside both required Go-version jobs, so a failed round trip blocks merging.
+
+The happy paths use an explicit 30-second backup limit. A separate case holds an exclusive table lock and verifies that `--timeout` cancels a blocked `pg_dump`, reports failure and removes partial output. The runner's overall test deadline remains the outer safety limit.
 
 ## Pull requests
 

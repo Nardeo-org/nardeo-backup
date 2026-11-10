@@ -4,8 +4,11 @@
 
 GO ?= go
 BINARY ?= bin/nardeo-backup
+VERSION ?= dev
+COMMIT ?= $(shell if test -e .git; then git rev-parse --short=12 HEAD 2>/dev/null || printf unknown; else printf unknown; fi)
+LDFLAGS ?=
 GOVULNCHECK_VERSION := v1.9.0
-export GO
+export GO VERSION COMMIT LDFLAGS
 
 .PHONY: help build test check fmt fmt-check vet test-integration security
 
@@ -22,7 +25,7 @@ help:
 
 build:
 	@mkdir -p "$$(dirname -- "$(BINARY)")"
-	"$(GO)" build -trimpath -o "$(BINARY)" ./cmd/nardeo-backup
+	"$(GO)" build -trimpath -ldflags "$$LDFLAGS -X main.version=$$VERSION -X main.commit=$$COMMIT" -o "$(BINARY)" ./cmd/nardeo-backup
 
 test:
 	"$(GO)" test -race ./...

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -18,6 +19,7 @@ type Config struct {
 	DatabaseURL string
 	OutputDir   string
 	Verbose     bool
+	Timeout     time.Duration
 }
 
 func FromEnv() Config {
@@ -38,9 +40,13 @@ func (c *Config) BindFlags(flags *pflag.FlagSet) {
 	// Connection URLs may contain credentials; never print an environment-derived default.
 	flags.Lookup("db-url").DefValue = ""
 	flags.BoolVar(&c.Verbose, "verbose", c.Verbose, "Enable debug logging")
+	flags.DurationVar(&c.Timeout, "timeout", c.Timeout, "Maximum backup duration, for example 15m (0 disables the limit)")
 }
 
 func (c Config) Validate() error {
+	if c.Timeout < 0 {
+		return fmt.Errorf("timeout must be zero or a positive duration")
+	}
 	if strings.TrimSpace(c.OutputDir) == "" {
 		return fmt.Errorf("output directory must not be empty")
 	}
