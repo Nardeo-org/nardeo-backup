@@ -34,15 +34,14 @@ The required `test (stable)` CI job performs the same snapshot build and uploads
 
 ## Prepare the first release
 
-1. Merge the implementation and release-configuration PRs into `main` and confirm all required checks pass, including the release preview.
-2. In a reviewed PR, move the initial entries in `CHANGELOG.md` from Unreleased to `0.1.0` with the actual release date, and leave a new Unreleased section for future changes.
-3. From a clean checkout, update `main` and create the version tag:
+1. Merge the implementation and release-configuration PRs into `main` and confirm all required checks pass, including the release preview. The initial `0.1.0` entry is included in [CHANGELOG.md](../CHANGELOG.md).
+2. From a clean checkout, update `main` and create the version tag:
 
 ```sh
 git switch main
 git pull --ff-only origin main
 git tag -a v0.1.0 -m 'Nardeo Backup v0.1.0'
-git push origin v0.1.0
+git push origin refs/tags/v0.1.0
 ```
 
 Version tags are protected against modification and deletion. Verify the version and target commit before pushing; corrections to published source use a new version tag.

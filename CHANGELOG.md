@@ -4,7 +4,7 @@ Copyright (c) 2026 Nardeo.
 
 ## Unreleased
 
-The first planned release is `v0.1.0`.
+## 0.1.0
 
 ### Added
 
